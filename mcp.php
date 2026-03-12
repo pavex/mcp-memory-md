@@ -12,13 +12,13 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/Config.php';
-require_once __DIR__ . '/src/Logger/LoggerInterface.php';
-require_once __DIR__ . '/src/Logger/NullLogger.php';
-require_once __DIR__ . '/src/Logger/Logger.php';
-require_once __DIR__ . '/src/Server/ToolRegistryInterface.php';
-require_once __DIR__ . '/src/Server/Server.php';
-require_once __DIR__ . '/src/Memory/Memory.php';
-require_once __DIR__ . '/src/Memory/MemoryToolRegistry.php';
+require_once __DIR__ . '/Logger/LoggerInterface.php';
+require_once __DIR__ . '/Logger/NullLogger.php';
+require_once __DIR__ . '/Logger/Logger.php';
+require_once __DIR__ . '/Server/ToolRegistryInterface.php';
+require_once __DIR__ . '/Server/Server.php';
+require_once __DIR__ . '/Memory/Memory.php';
+require_once __DIR__ . '/Memory/MemoryToolRegistry.php';
 
 use MCP\Logger\Logger;
 use MCP\Memory\Memory;

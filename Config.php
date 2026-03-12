@@ -13,13 +13,13 @@ declare(strict_types=1);
 final class Config
 {
     /** Absolute path to the persistent memory file. */
-    public const MEMORY_FILE = __DIR__ . '/storage/memory.md';
+    public const MEMORY_FILE = __DIR__ . '/.storage/memory.md';
 
     /** Absolute path to the default memory template loaded on first run. */
-    public const DEFAULT_FILE = __DIR__ . '/storage/default.md';
+    public const DEFAULT_FILE = __DIR__ . '/.storage/default.md';
 
     /** Absolute path to the request log file. */
-    public const LOG_FILE = __DIR__ . '/storage/memory.log';
+    public const LOG_FILE = __DIR__ . '/.storage/memory.log';
 
     /** Maximum log file size in bytes before rotation (32 KB). */
     public const LOG_MAX_BYTES = 32 * 1024;

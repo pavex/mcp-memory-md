@@ -25,24 +25,23 @@ Built as a clean, readable demonstration of how MCP works: JSON-RPC 2.0 transpor
 
 ```
 mcp-memory-md/
-├── src/
-│   ├── Logger/
-│   │   ├── LoggerInterface.php    # Logger contract
-│   │   ├── Logger.php             # File logger with automatic rotation
-│   │   └── NullLogger.php         # No-op logger (default)
-│   ├── Memory/
-│   │   ├── Memory.php             # Memory model — remember, append, knowledge
-│   │   └── MemoryToolRegistry.php # Tool definitions for the Memory model
-│   └── Server/
-│       ├── ToolRegistryInterface.php # Tool registry contract
-│       └── Server.php             # JSON-RPC 2.0 transport and dispatcher
-├── storage/
-│   ├── default.md                 # Default instructions loaded on first run
-│   ├── memory.md                  # Persistent memory file (auto-generated)
-│   └── memory.log                 # Tool call log (auto-generated)
-├── Config.php                     # Class constants — paths, limits, protocol version
-├── mcp.php                        # Entry point — registers models and starts the server
-└── watch.php                      # CLI watcher — displays memory.md on every change
+├── Logger/
+│   ├── LoggerInterface.php    # Logger contract
+│   ├── Logger.php             # File logger with automatic rotation
+│   └── NullLogger.php         # No-op logger (default)
+├── Memory/
+│   ├── Memory.php             # Memory model — remember, append, knowledge
+│   └── MemoryToolRegistry.php # Tool definitions for the Memory model
+├── Server/
+│   ├── ToolRegistryInterface.php # Tool registry contract
+│   └── Server.php             # JSON-RPC 2.0 transport and dispatcher
+├── .storage/
+│   ├── default.md             # Default instructions loaded on first run
+│   ├── memory.md              # Persistent memory file (auto-generated)
+│   └── memory.log             # Tool call log (auto-generated)
+├── Config.php                 # Class constants — paths, limits, protocol version
+├── mcp.php                    # Entry point — registers models and starts the server
+└── watch.php                  # CLI watcher — displays memory.md on every change
 ```
 
 ### Available Tools
@@ -88,9 +87,9 @@ No dependencies, no Composer — pure PHP only.
 All paths and limits are defined as class constants in `Config.php`:
 
 ```php
-Config::MEMORY_FILE       // main memory file  (memory.md)
-Config::DEFAULT_FILE      // default template  (default.md)
-Config::LOG_FILE          // tool call log     (memory.log)
+Config::MEMORY_FILE       // main memory file  (.storage/memory.md)
+Config::DEFAULT_FILE      // default template  (.storage/default.md)
+Config::LOG_FILE          // tool call log     (.storage/memory.log)
 Config::LOG_MAX_BYTES     // rotate log after 32 KB
 Config::WATCH_INTERVAL_US // watcher poll interval (500 ms)
 ```
@@ -100,7 +99,7 @@ Config::WATCH_INTERVAL_US // watcher poll interval (500 ms)
 ## 📋 First Run — default.md
 
 On first use, `memory.md` does not exist yet. When `knowledge` is called, the server
-automatically loads `default.md` instead — a template with base instructions that guides
+automatically loads `.storage/default.md` instead — a template with base instructions that guides
 Claude on how to structure and maintain memory.
 
 Once Claude writes anything via `append` or `remember`, `memory.md` is created and
