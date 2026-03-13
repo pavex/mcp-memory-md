@@ -27,6 +27,9 @@ final class Server
     /** @var array<int, array<string, mixed>> Aggregated tool definitions from all registries */
     private array $toolDefinitions = [];
 
+    /** Maximum length of a string parameter value in log output. */
+    private const LOG_PARAM_MAX_LEN = 100;
+
     public function __construct(
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {}
@@ -34,7 +37,7 @@ final class Server
     /**
      * Registers a model and its associated tool registry with the server.
      *
-     * @param object                $model    The model instance handling tool calls.
+     * @param object $model The model instance handling tool calls.
      * @param ToolRegistryInterface $registry Tool definitions exposed by this model.
      */
     public function registerModel(object $model, ToolRegistryInterface $registry): void
@@ -42,7 +45,7 @@ final class Server
         foreach ($registry->all() as $tool) {
             $name = $tool['name'];
             $this->toolDefinitions[] = $tool;
-            $this->toolHandlers[$name] = fn(array $params) => $model->{$name}(...array_values($params));
+            $this->toolHandlers[$name] = fn(array $params) => $model->{$name}(...$params);
         }
     }
 
@@ -78,8 +81,8 @@ final class Server
     // ---------------------------------------------------------------------------
 
     /**
-     * @param mixed                $id
-     * @param string               $method
+     * @param mixed $id
+     * @param string $method
      * @param array<string, mixed> $params
      */
     private function dispatch(mixed $id, string $method, array $params): void
@@ -117,7 +120,7 @@ final class Server
     // ---------------------------------------------------------------------------
 
     /**
-     * @param mixed                $id
+     * @param mixed $id
      * @param array<string, mixed> $params
      */
     private function handleInitialize(mixed $id, array $params): void
@@ -128,8 +131,8 @@ final class Server
             'capabilities' => ['tools' => new \stdClass()],
             'serverInfo' => [
                 'name' => \Config::MCP_SERVER_NAME,
-                'version' => \Config::MCP_SERVER_VERSION,
-            ],
+                'version' => \Config::MCP_SERVER_VERSION
+            ]
         ]);
     }
 
@@ -139,7 +142,7 @@ final class Server
     }
 
     /**
-     * @param mixed                $id
+     * @param mixed $id
      * @param array<string, mixed> $params
      */
     private function handleToolCall(mixed $id, array $params): void
@@ -147,7 +150,7 @@ final class Server
         $toolName = $params['name'] ?? '';
         $toolParams = $params['arguments'] ?? [];
 
-        $this->logger->log("tools/call:{$toolName}", $toolParams ?: null);
+        $this->logger->log("tools/call:{$toolName}", $this->truncateParams($toolParams) ?: null);
 
         if (!isset($this->toolHandlers[$toolName])) {
             $this->sendError($id, -32601, "Unknown tool: {$toolName}");
@@ -160,10 +163,35 @@ final class Server
             'content' => [
                 [
                     'type' => 'text',
-                    'text' => json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
-                ],
-            ],
+                    'text' => json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+                ]
+            ]
         ]);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Log helpers
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Returns a copy of the params array with long string values truncated.
+     * Strings exceeding LOG_PARAM_MAX_LEN are replaced with "{N chars}" so
+     * the log stays readable even for tools that write large file content.
+     *
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function truncateParams(array $params): array
+    {
+        $result = [];
+        foreach ($params as $key => $value) {
+            if (is_string($value) && mb_strlen($value) > self::LOG_PARAM_MAX_LEN) {
+                $result[$key] = '{' . mb_strlen($value) . ' chars}';
+            } else {
+                $result[$key] = $value;
+            }
+        }
+        return $result;
     }
 
     // ---------------------------------------------------------------------------
@@ -175,7 +203,7 @@ final class Server
         echo json_encode([
             'jsonrpc' => '2.0',
             'id' => $id,
-            'result' => $result,
+            'result' => $result
         ], JSON_UNESCAPED_UNICODE) . "\n";
     }
 
@@ -187,7 +215,7 @@ final class Server
         echo json_encode([
             'jsonrpc' => '2.0',
             'id' => $id,
-            'error' => ['code' => $code, 'message' => $message],
+            'error' => ['code' => $code, 'message' => $message]
         ], JSON_UNESCAPED_UNICODE) . "\n";
     }
 }
