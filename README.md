@@ -17,6 +17,7 @@ Built as a clean, readable demonstration of how MCP works: JSON-RPC 2.0 transpor
 - 🚀 Three focused tools: `knowledge`, `remember`, `append`
 - 📋 Customisable first-run template via `default.md`
 - 👁️ Real-time memory watcher (`watch.php`) for live monitoring
+- 🗂️ Multiple isolated memory files via optional prefix argument
 - 🔌 Compatible with Claude Desktop and any MCP-capable client
 
 ---
@@ -132,6 +133,45 @@ Add the server under `mcpServers`:
 > ⚠️ Use an absolute path. Relative paths will not work.
 
 After saving, **restart Claude Desktop**. The tools icon (🔨) will appear in the interface — click it to confirm the server is running and tools are available.
+
+---
+
+## 🗂️ Multiple Memory Files (prefix argument)
+
+By default the server stores memory in `.storage/memory.md`. You can pass an optional
+prefix as the first argument to `mcp.php` to use a different file — allowing you to run
+multiple isolated server instances from the same installation.
+
+**Allowed characters:** letters, digits, hyphen, underscore (`a-z A-Z 0-9 - _`).
+Invalid or missing prefix falls back to `memory`.
+
+### File mapping
+
+| Argument | Memory file | Log file |
+|---|---|---|
+| *(none)* | `.storage/memory.md` | `.storage/memory.log` |
+| `longterm` | `.storage/longterm.md` | `.storage/longterm.log` |
+| `shared` | `.storage/shared.md` | `.storage/shared.log` |
+
+### Claude Desktop — two independent servers
+
+```json
+{
+  "mcpServers": {
+    "memory-md": {
+      "command": "php",
+      "args": ["/absolute/path/to/mcp-memory-md/mcp.php"]
+    },
+    "memory-longterm": {
+      "command": "php",
+      "args": ["/absolute/path/to/mcp-memory-md/mcp.php", "longterm"]
+    }
+  }
+}
+```
+
+Each server exposes the same three tools (`knowledge`, `remember`, `append`) but reads
+and writes its own isolated file. Claude Desktop will list both under the tools icon.
 
 ---
 

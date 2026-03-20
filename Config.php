@@ -9,17 +9,27 @@ declare(strict_types=1);
  * class constants instead of procedural define() calls makes the
  * configuration namespaced, auto-completable, and impossible to redefine
  * at runtime.
+ *
+ * ENV parameters
+ * --------------
+ * MEMORY_PREFIX  Optional file name prefix for the memory file stored in
+ *                .storage/. Defaults to "memory", resulting in memory.md.
+ *                Set to a different value to run multiple server instances
+ *                with isolated memory files, e.g.:
+ *                  MEMORY_PREFIX=longterm  → .storage/longterm.md
+ *                  MEMORY_PREFIX=shared    → .storage/shared.md
+ *                Allowed characters: letters, digits, hyphen, underscore.
  */
 final class Config
 {
     /** Absolute path to the persistent memory file. */
-    public const MEMORY_FILE = __DIR__ . '/.storage/memory.md';
+    public const MEMORY_FILE = __DIR__ . '/.storage/' . MEMORY_PREFIX_RESOLVED . '.md';
 
     /** Absolute path to the default memory template loaded on first run. */
-    public const DEFAULT_FILE = __DIR__ . '/.storage/default.md';
+    public const DEFAULT_FILE = __DIR__ . '/.storage/' . MEMORY_PREFIX_RESOLVED . '-default.md';
 
     /** Absolute path to the request log file. */
-    public const LOG_FILE = __DIR__ . '/.storage/memory.log';
+    public const LOG_FILE = __DIR__ . '/.storage/' . MEMORY_PREFIX_RESOLVED . '.log';
 
     /** Maximum log file size in bytes before rotation (32 KB). */
     public const LOG_MAX_BYTES = 32 * 1024;
