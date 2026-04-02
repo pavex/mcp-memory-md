@@ -10,26 +10,19 @@ declare(strict_types=1);
  * configuration namespaced, auto-completable, and impossible to redefine
  * at runtime.
  *
- * ENV parameters
- * --------------
- * MEMORY_PREFIX  Optional file name prefix for the memory file stored in
- *                .storage/. Defaults to "memory", resulting in memory.md.
- *                Set to a different value to run multiple server instances
- *                with isolated memory files, e.g.:
- *                  MEMORY_PREFIX=longterm  → .storage/longterm.md
- *                  MEMORY_PREFIX=shared    → .storage/shared.md
- *                Allowed characters: letters, digits, hyphen, underscore.
+ * MEMORY_FILE, MEMORY_LOG, and MEMORY_DEFAULT are resolved in mcp.php
+ * before this file is loaded, so they are always plain strings here.
  */
 final class Config
 {
     /** Absolute path to the persistent memory file. */
-    public const MEMORY_FILE = __DIR__ . '/.storage/' . MEMORY_PREFIX_RESOLVED . '.md';
+    public const MEMORY_FILE = MEMORY_FILE;
 
-    /** Absolute path to the default memory template loaded on first run. */
-    public const DEFAULT_FILE = __DIR__ . '/.storage/' . MEMORY_PREFIX_RESOLVED . '-default.md';
+    /** Absolute path to the default memory template (prefix mode only, empty string otherwise). */
+    public const DEFAULT_FILE = MEMORY_DEFAULT;
 
-    /** Absolute path to the request log file. */
-    public const LOG_FILE = __DIR__ . '/.storage/' . MEMORY_PREFIX_RESOLVED . '.log';
+    /** Absolute path to the request log file. Always inside .storage/. */
+    public const LOG_FILE = MEMORY_LOG;
 
     /** Maximum log file size in bytes before rotation (32 KB). */
     public const LOG_MAX_BYTES = 32 * 1024;

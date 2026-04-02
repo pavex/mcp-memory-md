@@ -18,6 +18,7 @@ Built as a clean, readable demonstration of how MCP works: JSON-RPC 2.0 transpor
 - 📋 Customisable first-run template via `default.md`
 - 👁️ Real-time memory watcher (`watch.php`) for live monitoring
 - 🗂️ Multiple isolated memory files via optional prefix argument
+- 📂 Direct file path support — point to any `.md` file anywhere on disk
 - 🔌 Compatible with Claude Desktop and any MCP-capable client
 
 ---
@@ -39,7 +40,7 @@ mcp-memory-md/
 ├── .storage/
 │   ├── default.md             # Default instructions loaded on first run
 │   ├── memory.md              # Persistent memory file (auto-generated)
-│   └── memory.log             # Tool call log (auto-generated)
+│   └── memory.log             # Tool call log (always stored here)
 ├── Config.php                 # Class constants — paths, limits, protocol version
 ├── mcp.php                    # Entry point — registers models and starts the server
 └── watch.php                  # CLI watcher — displays memory.md on every change
@@ -49,9 +50,9 @@ mcp-memory-md/
 
 | Tool | Description |
 |---|---|
-| `knowledge` | Reads the entire content of `memory.md` — call at the start of each conversation |
-| `remember` | Replaces the entire content of `memory.md` with new text — use to reorganise or rewrite all stored knowledge |
-| `append` | Adds text to the end of `memory.md` without losing existing content |
+| `knowledge` | Reads the entire content of the memory file — call at the start of each conversation |
+| `remember` | Replaces the entire content of the memory file with new text — use to reorganise or rewrite all stored knowledge |
+| `append` | Adds text to the end of the memory file without losing existing content |
 
 ---
 
@@ -88,24 +89,63 @@ No dependencies, no Composer — pure PHP only.
 All paths and limits are defined as class constants in `Config.php`:
 
 ```php
-Config::MEMORY_FILE       // main memory file  (.storage/memory.md)
-Config::DEFAULT_FILE      // default template  (.storage/default.md)
-Config::LOG_FILE          // tool call log     (.storage/memory.log)
+Config::MEMORY_FILE       // main memory file  (resolved from argument)
+Config::DEFAULT_FILE      // default template  (prefix mode only, null in path mode)
+Config::LOG_FILE          // tool call log     (always in .storage/, named after the memory file)
 Config::LOG_MAX_BYTES     // rotate log after 32 KB
 Config::WATCH_INTERVAL_US // watcher poll interval (500 ms)
 ```
 
 ---
 
+## 🗂️ Memory File — Two Modes
+
+The first argument to `mcp.php` determines where the memory file lives.
+The server automatically detects the mode based on whether the argument contains a path separator (`/` or `\`).
+
+The log file is **always** stored in `.storage/` next to `mcp.php`, named after the base name of the memory file.
+
+### Mode 1 — Prefix (default)
+
+Pass a simple name without any path separators. The file is stored inside `.storage/` next to `mcp.php`.
+
+**Allowed characters:** letters, digits, hyphen, underscore (`a-z A-Z 0-9 - _`).  
+Invalid or missing prefix falls back to `memory`.
+
+| Argument | Memory file | Log file |
+|---|---|---|
+| *(none)* | `.storage/memory.md` | `.storage/memory.log` |
+| `longterm` | `.storage/longterm.md` | `.storage/longterm.log` |
+| `shared` | `.storage/shared.md` | `.storage/shared.log` |
+
+### Mode 2 — Direct path
+
+Pass any path that contains `/` or `\`. The file is used exactly as specified.
+Relative paths are resolved against the current working directory (cwd).
+
+> ⚠️ The target directory **must already exist** and be writable. The server will not create it automatically — attempting to write into a non-existent or non-writable directory returns an error.
+
+| Argument | Memory file | Log file |
+|---|---|---|
+| `/data/project.md` | `/data/project.md` | `.storage/project.log` |
+| `../notes/todo.md` | `<cwd>/../notes/todo.md` | `.storage/todo.log` |
+| `C:\notes\todo.md` | `C:\notes\todo.md` | `.storage/todo.log` |
+
+> 💡 In path mode the default template (`default.md`) is **not** used — if the file does not exist, memory starts empty.
+
+---
+
 ## 📋 First Run — default.md
 
-On first use, `memory.md` does not exist yet. When `knowledge` is called, the server
-automatically loads `.storage/default.md` instead — a template with base instructions that guides
+*(Applies to prefix mode only.)*
+
+On first use the memory file does not exist yet. When `knowledge` is called, the server
+automatically loads `.storage/<prefix>-default.md` instead — a template with base instructions that guides
 Claude on how to structure and maintain memory.
 
-Once Claude writes anything via `append` or `remember`, `memory.md` is created and
-`default.md` is no longer used. You can freely edit `default.md` to customise the
-initial instructions for your own setup.
+Once Claude writes anything via `append` or `remember`, the memory file is created and
+the default template is no longer used. You can freely edit or create your own default
+template to customise the initial instructions for your setup.
 
 ---
 
@@ -117,7 +157,7 @@ Open the Claude Desktop configuration file:
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-Add the server under `mcpServers`:
+### Basic setup (single memory file)
 
 ```json
 {
@@ -132,28 +172,7 @@ Add the server under `mcpServers`:
 
 > ⚠️ Use an absolute path. Relative paths will not work.
 
-After saving, **restart Claude Desktop**. The tools icon (🔨) will appear in the interface — click it to confirm the server is running and tools are available.
-
----
-
-## 🗂️ Multiple Memory Files (prefix argument)
-
-By default the server stores memory in `.storage/memory.md`. You can pass an optional
-prefix as the first argument to `mcp.php` to use a different file — allowing you to run
-multiple isolated server instances from the same installation.
-
-**Allowed characters:** letters, digits, hyphen, underscore (`a-z A-Z 0-9 - _`).
-Invalid or missing prefix falls back to `memory`.
-
-### File mapping
-
-| Argument | Memory file | Log file |
-|---|---|---|
-| *(none)* | `.storage/memory.md` | `.storage/memory.log` |
-| `longterm` | `.storage/longterm.md` | `.storage/longterm.log` |
-| `shared` | `.storage/shared.md` | `.storage/shared.log` |
-
-### Claude Desktop — two independent servers
+### Multiple isolated memory files (prefix mode)
 
 ```json
 {
@@ -170,8 +189,23 @@ Invalid or missing prefix falls back to `memory`.
 }
 ```
 
+### Direct path to a specific file
+
+```json
+{
+  "mcpServers": {
+    "memory-project": {
+      "command": "php",
+      "args": ["/absolute/path/to/mcp-memory-md/mcp.php", "/home/user/projects/myproject/memory.md"]
+    }
+  }
+}
+```
+
 Each server exposes the same three tools (`knowledge`, `remember`, `append`) but reads
-and writes its own isolated file. Claude Desktop will list both under the tools icon.
+and writes its own isolated file. Claude Desktop will list all registered servers under the tools icon.
+
+After saving, **restart Claude Desktop**. The tools icon (🔨) will appear in the interface — click it to confirm the server is running and tools are available.
 
 ---
 
@@ -203,7 +237,7 @@ Save important information using `append` or `remember`.
 
 ## 👁️ Watching Memory in Real Time
 
-`watch.php` is a CLI utility that monitors `memory.md` and reprints its content
+`watch.php` is a CLI utility that monitors the memory file and reprints its content
 to the terminal whenever the file changes. Useful for seeing exactly what Claude
 is writing during an active session.
 
